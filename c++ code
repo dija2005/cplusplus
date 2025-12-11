@@ -1,0 +1,122 @@
+#include <iostream>
+#include <string>
+#include <regex>
+#include <filesystem>
+#include <fstream>
+#include <vector>
+
+namespace fs = std::filesystem;
+
+// Prüft ob eine Datei binär ist
+// Hintergrund: Binärdateien sollen laut Aufgabe ignoriert werden
+bool is_binary(const fs::path& p) {
+    std::ifstream f(p, std::ios::binary);
+    if (!f.is_open()) return true;
+    char buffer[256];
+    f.read(buffer, sizeof(buffer));
+    // Wenn ein Nullbyte vorkommt → Datei ist sehr wahrscheinlich binär
+    for (int i = 0; i < f.gcount(); i++)
+        if (buffer[i] == '\0') return true;
+    return false;
+}
+
+// Zeigt die Hilfe an
+void help() {
+    std::cout << "usage: searcher [OPTIONS] PATTERN [PATH]\n";
+}
+
+int main(int argc, char** argv) {
+    // Falls keine Argumente übergeben wurden → Hilfe anzeigen
+    if (argc < 2) { help(); return 0; }
+
+    // Optionen aus der Aufgabenbeschreibung
+    bool color = false;     // farbige Markierung
+    bool ignore = false;    // Groß-/Kleinschreibung ignorieren
+    bool nohead = false;    // ohne Dateikopf ausgeben
+    int before = 0;         // Anzahl vorheriger Zeilen
+    int after = 0;          // Anzahl nachfolgender Zeilen
+
+    std::string pattern_str;  
+    std::string path_str = "."; // Standard: aktueller Ordner
+
+    // Sehr einfacher Argument-Parser
+    for (int i = 1; i < argc; i++) {
+        std::string a = argv[i];
+
+        if (a == "--help") { help(); return 0; }
+        else if (a == "-c" || a == "--color") color = true;
+        else if (a == "-i" || a == "--ignore-case") ignore = true;
+        else if (a == "--no-heading") nohead = true;
+
+        // Kontext-Optionen
+        else if (a == "-A" && i+1 < argc) after = std::stoi(argv[++i]);
+        else if (a == "-B" && i+1 < argc) before = std::stoi(argv[++i]);
+        else if (a == "-C" && i+1 < argc) before = after = std::stoi(argv[++i]);
+
+        // Erstes nicht-option Argument = Suchmuster
+        else if (pattern_str.empty()) pattern_str = a;
+
+        // Zweites nicht-option Argument = Pfad
+        else path_str = a;
+    }
+
+    // Falls kein Suchmuster angegeben wurde
+    if (pattern_str.empty()) { help(); return 0; }
+
+    // Regex-Optionen festlegen (inkl. Ignore-case)
+    std::regex_constants::syntax_option_type flags = std::regex::ECMAScript;
+    if (ignore) flags |= std::regex::icase;
+
+    std::regex pattern(pattern_str, flags);
+
+    // Rekursives Durchlaufen aller Dateien im Pfad
+    for (auto& entry : fs::recursive_directory_iterator(path_str)) {
+        if (!entry.is_regular_file()) continue;     // nur echte Dateien
+        if (is_binary(entry.path())) continue;      // Binärdateien überspringen
+
+        std::ifstream file(entry.path());
+        if (!file.is_open()) continue;
+
+        // Datei vollständig einlesen
+        std::vector<std::string> lines;
+        std::string line;
+        while (std::getline(file, line)) lines.push_back(line);
+
+        // Jede Zeile auf ein Regex-Match prüfen
+        for (size_t i = 0; i < lines.size(); i++) {
+            if (std::regex_search(lines[i], pattern)) {
+
+                // Ausgabe der vorherigen Kontextzeilen
+                for (int b = before; b > 0; b--) {
+                    if (i >= b)
+                        std::cout << entry.path().string() << "-" << (i-b+1) 
+                                  << "-" << lines[i-b] << "\n";
+                }
+
+                // Zeile mit Treffer
+                std::string out = lines[i];
+
+                // Falls Farben aktiviert sind → Treffer rot markieren
+                if (color)
+                    out = std::regex_replace(out, pattern, "\033[31m$&\033[0m");
+
+                // Ausgabe mit oder ohne Dateikopf
+                if (nohead)
+                    std::cout << entry.path().string() << ":" << (i+1) << ":" << out << "\n";
+                else {
+                    std::cout << entry.path().string() << "\n";
+                    std::cout << (i+1) << ":" << out << "\n";
+                }
+
+                // Ausgabe der nachfolgenden Kontextzeilen
+                for (int a = 1; a <= after; a++) {
+                    if (i + a < lines.size())
+                        std::cout << entry.path().string() << "-" << (i+a+1) 
+                                  << "-" << lines[i+a] << "\n";
+                }
+            }
+        }
+    }
+
+    return 0;
+}
