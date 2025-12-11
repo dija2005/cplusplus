@@ -15,43 +15,35 @@ This outline is intentionally preliminary and may be revised during the writing 
 - Major stages of standardization
 - Evolution of language philosophy
 
-3. Fundamental Design Principles of C++
-- Zero-cost abstractions
-- Strong typing and compile-time mechanisms
-- Multiparadigm character
-- RAII and resource management
-- Backward compatibility
+3. Core Concepts and Design Principles of C++
+- Key language paradigms and philosophy (zero-cost abstractions, RAII)
+- Type system and abstraction mechanisms
+- Selected central features (e.g., templates, classes, memory model)
+- Distinctive aspects compared to C
 
-4. Technical Characteristics and Key Features
-- Object orientation
-- Templates and generic programming
-- Memory management and smart pointers
-- Standard Library components
-- Modern C++ features
-
-5. Applications and Use Cases
+4. Applications and Use Cases
 - Common domains of use
 - Possible case studies
 
-6. Tooling and Ecosystem
+5. Tooling and Ecosystem
 - Build systems
 - Package managers
 - Relevant tooling
 
-7. Implementation of the Search Tool
+6. Implementation of the Search Tool
 - Overview of task and goals
-- High-level design choices
+- Key design choices
 - Use of C++-specific features
 - Handling recursion, traversal, matching
 
-8. Performance Observations
-- Profiling approach
-- Bottlenecks and optimizations
+7. Performance Observations
+- Basic Profiling 
+- Main bottlenecks and optimizations
 - Reference to established tools
 
-9. Conclusion
+8. Conclusion
 - Summary of insights
 - Reflection on implementation experience
 
-10. References
+9. References
 (To be compiled during writing)
